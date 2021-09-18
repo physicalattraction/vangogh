@@ -4,6 +4,10 @@ Turn your photos into Van Gogh paintings in pointillism style!
 ## Execution notes
 
 In order to pointillize your image, do the following:
+- Install all requirements
+```shell script
+pip install -r requirements/local.txt
+```
 - Place all images you want to pointillize in the folder `img/input`
 - Run the script
 ```shell script
