@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from src.van_gogh import VanGogh
+from van_gogh import VanGogh
 
 
 class VanGoghTestCase(TestCase):

@@ -11,7 +11,7 @@ pip install -r requirements/local.txt
 - Place all images you want to pointillize in the folder `img/input`
 - Run the script
 ```shell script
-python main
+python -m main
 ```
 - Find all pointillized images in the folder `img/output`
 

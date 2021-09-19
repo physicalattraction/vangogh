@@ -1,6 +1,6 @@
 import os.path
 
-from src.van_gogh import GridType, VanGogh
+from van_gogh import GridType, VanGogh
 
 if __name__ == '__main__':
     vincent = VanGogh()

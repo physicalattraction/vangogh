@@ -6,7 +6,7 @@ from typing import List, Tuple
 import math
 from PIL import Image, ImageDraw
 
-from src.config import MAX_GRID_SIZE, OUTPUT_WIDTH
+from config import MAX_GRID_SIZE, OUTPUT_WIDTH
 
 Coordinate = Tuple[float, float]  # With float value between -1 and 1
 Color = Tuple[int, int, int]  # With integer values between 0 and 255
