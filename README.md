@@ -9,9 +9,13 @@ In order to pointillize your image, do the following:
 pip install -r requirements/local.txt
 ```
 - Place all images you want to pointillize in the folder `img/input`
-- Run the script
+- Run the script, e.g.
 ```shell script
-python -m main
+python -m main --grid_sizes 1 2 5 --grid_types hex square
+```
+- To find all options of the script explained, run
+```shell script
+python -m main --help
 ```
 - Find all pointillized images in the folder `img/output`
 
@@ -30,5 +34,4 @@ Example output with random grids:
 ![Example output random 2p](example/output/wolf_random_2p.png) | ![Example output random 10p](example/output/wolf_random_10p.png) | ![Example output random 25p](example/output/wolf_random_25p.png)
 
 ## TODOs
-- [ ] Write a script with arguments, and document the usage here
 - [ ] Profile the script, and optimize where possible
