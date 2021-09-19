@@ -2,35 +2,40 @@ import argparse
 import os.path
 from typing import List, Tuple
 
-from van_gogh import GridType, VanGogh
+from config import DEFAULT_GRID_SIZES, DEFAULT_GRID_TYPES, DEFAULT_OUTPUT_WIDTH, MAX_GRID_SIZE
+from grid_type import GridType
+from van_gogh import VanGogh
 
-default_grid_sizes = [1, 2, 5, 10, 15, 20, 25, 50, 75]
-default_grid_types = [GridType.HEX.value, GridType.SQUARE.value, GridType.RANDOM.value]
 help_grid_sizes = 'The various grid sizes (space separated) to create images for. ' \
-                  'Each grid size must be a integer between [0, 100]. ' \
-                  f'Optional, if none are given the default is used: {default_grid_sizes}'
+                  f'Each grid size must be a integer between [1, {MAX_GRID_SIZE}]. ' \
+                  f'Optional, if none are given, the default is used: {DEFAULT_GRID_SIZES}'
 help_grid_types = 'The various grid types (space separated) to create images for. ' \
                   f'Valid grid types are {GridType.HEX.value}, {GridType.SQUARE.value} and {GridType.RANDOM.value}.' \
-                  f'Optional, if none are given the default is used: {default_grid_types}'
+                  f'Optional, if none are given, the default is used: {DEFAULT_GRID_TYPES}'
+help_output_width = 'Width of the output image in pixels. The height is determined by the ratio of the input image. ' \
+                    f'Optional, if not given, the default is used: {DEFAULT_OUTPUT_WIDTH}'
 
 
-def parse_args() -> Tuple[List[int], List[GridType]]:
+def parse_args() -> Tuple[List[int], List[GridType], int]:
     parser = argparse.ArgumentParser()
     parser.description = 'Turn your pictures into marvels of wonder from the Dutch master Vincent van Gogh himself!'
     parser.add_argument('--grid_sizes', type=int, nargs='+', help=help_grid_sizes)
     parser.add_argument('--grid_types', type=str, nargs='+', help=help_grid_types)
+    parser.add_argument('--output_width', type=int, help=help_output_width)
     args = parser.parse_args()
 
     # Fill in defaults for missing arguments
     if not args.grid_sizes:
-        args.grid_sizes = default_grid_sizes
+        args.grid_sizes = DEFAULT_GRID_SIZES
     if not args.grid_types:
-        args.grid_types = default_grid_types
+        args.grid_types = DEFAULT_GRID_TYPES
+    if not args.output_width:
+        args.output_width = DEFAULT_OUTPUT_WIDTH
 
     # Convert values to GridType enum objects
     args.grid_types = [GridType(grid_type) for grid_type in args.grid_types]
 
-    return args.grid_sizes, args.grid_types
+    return args.grid_sizes, args.grid_types, args.output_width
 
 
 def pointillize_input_img(grid_sizes: List[int], grid_types: List[GridType]):
@@ -47,7 +52,7 @@ def pointillize_input_img(grid_sizes: List[int], grid_types: List[GridType]):
 
 
 if __name__ == '__main__':
-    _grid_sizes, _grid_types = parse_args()
-    vincent = VanGogh()
+    _grid_sizes, _grid_types, _output_width = parse_args()
+    vincent = VanGogh(_output_width)
     for input_filename in vincent.get_input_images():
         pointillize_input_img(_grid_sizes, _grid_types)

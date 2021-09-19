@@ -1,21 +1,15 @@
 import os
 import random
-from enum import Enum
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import math
 from PIL import Image, ImageDraw
 
-from config import MAX_GRID_SIZE, OUTPUT_WIDTH
+from config import MAX_GRID_SIZE
+from grid_type import GridType
 
 Coordinate = Tuple[float, float]  # With float value between -1 and 1
 Color = Tuple[int, int, int]  # With integer values between 0 and 255
-
-
-class GridType(Enum):
-    HEX = 'hex'
-    SQUARE = 'square'
-    RANDOM = 'random'
 
 
 class VanGogh:
@@ -23,24 +17,34 @@ class VanGogh:
     Paint like the famous Dutch artist!
     """
 
-    src_dir = os.path.dirname(__file__)
-    root_dir = os.path.dirname(src_dir)
-    img_dir = os.path.join(root_dir, 'img')
-    input_dir = os.path.join(img_dir, 'input')
-    output_dir = os.path.join(img_dir, 'output')
+    _src_dir = os.path.dirname(__file__)
+    _root_dir = os.path.dirname(_src_dir)
+    _img_dir = os.path.join(_root_dir, 'img')
+    _input_dir = os.path.join(_img_dir, 'input')
+    _output_dir = os.path.join(_img_dir, 'output')
 
-    input_img: Image  # The image that serves as template
-    grid_size: int  # Number of pixels in one direction (up to a constant)
-    size: Tuple[int, int]  # The size in pixels of the output image
-    img: Image  # The image we are drawing on
-    draw: ImageDraw
+    grid_size: int  # Number of points in one direction (up to a constant)
+    output_width: int  # Number of pixels of the output image
 
-    def __init__(self, grid_size=50):
-        self.set_grid_size(grid_size)
+    _input_img: Image  # The image that serves as template
+    _size: Optional[Tuple[int, int]]  # Size of the output image in pixels
+    _width: Optional[int]
+    _height: Optional[int]
+    _img: Image  # The image we are drawing on
+    _draw: ImageDraw
+
+    def __init__(self, output_width: int):
+        self.output_width = output_width
+
+        self._size = None
+        self._width = None
+        self._height = None
 
     @property
     def size(self):
-        return self.img.size
+        if not self._size:
+            self._size = self._img.size
+        return self._size
 
     @property
     def width(self) -> int:
@@ -57,13 +61,13 @@ class VanGogh:
         :param input_dir: Optional, directory to search in. Default: img/input
         """
 
-        search_path = os.path.join(input_dir or self.input_dir)
+        search_path = os.path.join(input_dir or self._input_dir)
         list_imgs = [f for f in os.listdir(search_path)
                      if os.path.isfile(os.path.join(search_path, f))
                      and os.path.splitext(os.path.join(search_path, f))[-1] in {'.jpg', '.jpeg', '.png'}]
         return list_imgs
 
-    def set_input_img(self, input_file: str, input_dir: str = None) -> Image:
+    def set_input_img(self, input_file: str, input_dir: str = None):
         """
         Open an image from a file in the img/input directory
 
@@ -71,23 +75,22 @@ class VanGogh:
         :param input_dir: Optional, directory where the file is located. Default: img/input
         """
 
-        full_filename_in = os.path.join(input_dir or self.input_dir, input_file)
-        self.input_img = Image.open(full_filename_in)
+        full_filename_in = os.path.join(input_dir or self._input_dir, input_file)
+        self._input_img = Image.open(full_filename_in)
 
     def set_grid_size(self, grid_size: int):
         """
         Set the grid size for the output image, defined as the number of pixels in one direction (up to a constant)
         """
 
-        assert grid_size <= MAX_GRID_SIZE, f'Grid sizes larger than {MAX_GRID_SIZE} are not supported until ' \
-                                           f'performance has been improved'
+        assert grid_size <= MAX_GRID_SIZE, f'Grid sizes larger than {MAX_GRID_SIZE} are not supported'
         self.grid_size = grid_size
 
     def pointillize_img(self, grid_type: GridType):
-        width = OUTPUT_WIDTH
-        height = int(round(width * self.input_img.size[1] / self.input_img.size[0]))
+        width = self.output_width
+        height = int(round(width * self._input_img.size[1] / self._input_img.size[0]))
         self._init_img(width, height)
-        radius = 1 / (2 * self.grid_size * 1.05)
+        radius = self.width / (4 * self.grid_size * 1.05)
 
         if grid_type == GridType.HEX:
             grid = self._hex_grid()
@@ -99,7 +102,7 @@ class VanGogh:
             raise AssertionError('Unknown grid type')
 
         for point in grid:
-            color = self._get_pixel(self.input_img, point)
+            color = self._get_pixel(self._input_img, point)
             if color is not None:
                 self._draw_circle(point, radius=radius, fill_color=color, outline_color=None)
 
@@ -108,7 +111,7 @@ class VanGogh:
         Show the image to screen
         """
 
-        self.img.show()
+        self._img.show()
 
     def save(self, img_name: str, img_dir: str = None):
         """
@@ -119,22 +122,14 @@ class VanGogh:
         """
 
         if img_dir is None:
-            img_dir = self.output_dir
+            img_dir = self._output_dir
 
         full_img_path = os.path.join(img_dir, f'{img_name}.png')
-        self.img.save(full_img_path, quality=95, optimize=True)
+        self._img.save(full_img_path, quality=95, optimize=False)
 
     def _hex_grid(self) -> List[Coordinate]:
         """
         Return a hexagonal grid
-
-            __
-         __/  \__
-        /  \__/  \
-        \__/  \__/
-        /  \__/  \
-        \__/  \__/
-           \__/
 
         Note: In principle, we should return coordinates within the box [-1, 1]. However, we also
         return coordinates a distance 2/grid_size away from this, in order to also fill pixels near
@@ -176,8 +171,8 @@ class VanGogh:
 
     def _init_img(self, width: int, height: int):
         size = (width, height)
-        self.img = Image.new('RGBA', size, (255, 255, 255))
-        self.draw = ImageDraw.Draw(self.img)
+        self._img = Image.new('RGBA', size, (255, 255, 255))
+        self._draw = ImageDraw.Draw(self._img)
 
     @staticmethod
     def _get_pixel(img: Image, coordinate: Coordinate) -> Color:
@@ -190,8 +185,8 @@ class VanGogh:
         """
 
         width, height = img.size
-        x = int(round((coordinate[0] + 1) / 2 * width))
-        y = int(round((coordinate[1] + 1) / 2 * height))
+        x = (coordinate[0] + 1) / 2 * width
+        y = (coordinate[1] + 1) / 2 * height
 
         # Due to rounding errors or coordinates just outside the box, it could be that the
         # coordinate falls outside the given image. In that case, return the closest pixel
@@ -203,9 +198,8 @@ class VanGogh:
         return img.getpixel((x, y))
 
     def _draw_circle(self, center: Coordinate, radius, fill_color, outline_color):
-        radius *= self.width / 2
-        left = int(round((center[0] + 1) / 2 * self.width - radius))
-        right = int(round((center[0] + 1) / 2 * self.width + radius))
-        upper = int(round((center[1] + 1) / 2 * self.height - radius))
-        lower = int(round((center[1] + 1) / 2 * self.height + radius))
-        self.draw.ellipse((left, upper, right, lower), fill=fill_color, outline=outline_color)
+        left = (center[0] + 1) / 2 * self.width - radius
+        right = (center[0] + 1) / 2 * self.width + radius
+        upper = (center[1] + 1) / 2 * self.height - radius
+        lower = (center[1] + 1) / 2 * self.height + radius
+        self._draw.ellipse((left, upper, right, lower), fill=fill_color, outline=outline_color)
